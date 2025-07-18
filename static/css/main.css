@@ -1,0 +1,235 @@
+/* static/css/main.css */
+
+:root {
+    --wolf-primary: #1e3a8a;
+    --wolf-secondary: #3b82f6;
+    --wolf-success: #10b981;
+    --wolf-warning: #f59e0b;
+    --wolf-danger: #ef4444;
+    --wolf-dark: #1f2937;
+    --wolf-light: #f8fafc;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--wolf-light);
+}
+
+/* Navigation */
+.navbar {
+    background: linear-gradient(135deg, var(--wolf-primary) 0%, var(--wolf-secondary) 100%) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+/* Cards */
+.card {
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 600;
+}
+
+/* Impact Level Badges */
+.badge-threat {
+    background-color: var(--wolf-danger);
+    color: white;
+}
+
+.badge-opportunity {
+    background-color: var(--wolf-success);
+    color: white;
+}
+
+.badge-watch {
+    background-color: var(--wolf-warning);
+    color: white;
+}
+
+.badge-noise {
+    background-color: #6b7280;
+    color: white;
+}
+
+/* Article Cards */
+.article-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.article-card:hover {
+    border-left-color: var(--wolf-primary);
+    background-color: #f8fafc;
+}
+
+.article-card.threat {
+    border-left-color: var(--wolf-danger);
+}
+
+.article-card.opportunity {
+    border-left-color: var(--wolf-success);
+}
+
+.article-card.watch {
+    border-left-color: var(--wolf-warning);
+}
+
+.article-card.noise {
+    border-left-color: #6b7280;
+}
+
+/* Summary Cards */
+.summary-card {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+.summary-card .icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.summary-card .number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+/* Animations */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+/* List Groups */
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1rem 0;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--wolf-primary) 0%, var(--wolf-secondary) 100%);
+    border: none;
+}
+
+.btn-outline-primary {
+    border-color: var(--wolf-primary);
+    color: var(--wolf-primary);
+}
+
+.btn-outline-primary:hover {
+    background: var(--wolf-primary);
+    border-color: var(--wolf-primary);
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+}
+
+/* Utility Classes */
+.text-muted {
+    color: #6b7280 !important;
+}
+
+.bg-light {
+    background-color: #f8fafc !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .summary-card {
+        padding: 1.5rem 1rem;
+    }
+    
+    .summary-card .icon {
+        font-size: 2rem;
+    }
+    
+    .summary-card .number {
+        font-size: 2rem;
+    }
+}
+
+/* Industry Icons */
+.industry-utilities { color: var(--wolf-warning); }
+.industry-financial { color: var(--wolf-success); }
+.industry-healthcare { color: var(--wolf-danger); }
+.industry-manufacturing { color: var(--wolf-secondary); }
+.industry-technology { color: var(--wolf-primary); }
+
+/* Status Indicators */
+.status-online {
+    color: var(--wolf-success);
+}
+
+.status-offline {
+    color: var(--wolf-danger);
+}
+
+.status-pending {
+    color: var(--wolf-warning);
+}
+
+/* Loading States */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid var(--wolf-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
