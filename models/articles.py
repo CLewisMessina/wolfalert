@@ -88,4 +88,4 @@ class AlertSummary(BaseModel):
     watch_items: int
     noise: int
     industries_covered: List[str]
-    latest_update: datetime
+    latest_update: Optional[datetime] = None

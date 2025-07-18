@@ -2,6 +2,10 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from models.database import get_db, Article, Classification
 from models.articles import Article as ArticleSchema, ArticleCreate, ArticleWithAnalysis
 from services.news_aggregator import NewsAggregator

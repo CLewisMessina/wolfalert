@@ -1,4 +1,8 @@
 # services/news_aggregator.py
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import feedparser
 import requests
 from bs4 import BeautifulSoup
@@ -7,7 +11,6 @@ from dateutil import parser as date_parser
 from sqlalchemy.orm import Session
 from models.database import Article, SessionLocal
 import logging
-import os
 from typing import List, Dict, Optional
 
 logging.basicConfig(level=logging.INFO)

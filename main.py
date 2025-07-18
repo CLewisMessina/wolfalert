@@ -4,10 +4,13 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from models.database import get_db, init_db, Article, Classification, Analysis
 from models.articles import ArticleWithAnalysis, AlertSummary, ImpactLevel, Industry
 from api import articles, analysis, reports
-import os
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -44,10 +47,9 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     watch_items = db.query(Classification).filter(Classification.impact_level == ImpactLevel.WATCH).count()
     noise = db.query(Classification).filter(Classification.impact_level == ImpactLevel.NOISE).count()
     
-    # Get recent articles with classifications
+    # Get recent articles (show all articles, not just processed)
     recent_articles = (
         db.query(Article)
-        .filter(Article.processed == True)
         .order_by(Article.created_at.desc())
         .limit(10)
         .all()
@@ -76,10 +78,11 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
 async def articles_page(request: Request, industry: str = None, impact: str = None, db: Session = Depends(get_db)):
     """Articles listing page with filters"""
     
-    query = db.query(Article).filter(Article.processed == True)
+    query = db.query(Article)
     
+    # Only filter by industry/impact if we have classifications
     if industry or impact:
-        query = query.join(Classification)
+        query = query.join(Classification, Article.id == Classification.article_id, isouter=True)
         if industry:
             query = query.filter(Classification.industry == industry)
         if impact:
@@ -126,6 +129,34 @@ async def article_detail(request: Request, article_id: int, db: Session = Depend
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "WolfAlert"}
+
+@app.get("/debug/articles")
+async def debug_articles(db: Session = Depends(get_db)):
+    """Debug endpoint to see what articles exist"""
+    articles = db.query(Article).all()
+    return {
+        "total_count": len(articles),
+        "articles": [
+            {
+                "id": article.id,
+                "title": article.title,
+                "source": article.source,
+                "processed": article.processed,
+                "created_at": article.created_at.isoformat() if article.created_at else None
+            }
+            for article in articles
+        ]
+    }
+
+@app.get("/initialize-demo")
+async def initialize_demo_data(db: Session = Depends(get_db)):
+    """Initialize demo data for testing"""
+    from services.news_aggregator import NewsAggregator
+    
+    aggregator = NewsAggregator()
+    count = aggregator.create_demo_articles()
+    
+    return {"message": f"Created {count} demo articles successfully"}
 
 if __name__ == "__main__":
     import uvicorn
