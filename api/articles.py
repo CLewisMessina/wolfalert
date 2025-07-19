@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models.database import get_db, Article, Classification
 from models.articles import Article as ArticleSchema, ArticleCreate, ArticleWithAnalysis
-from services.news_aggregator import NewsAggregator
+from services.real_only_aggregator import RealOnlyAggregator
 from typing import List, Optional
 import logging
 
@@ -93,9 +93,9 @@ async def fetch_articles(background_tasks: BackgroundTasks):
     """Trigger article fetching from RSS sources"""
     
     def fetch_task():
-        aggregator = NewsAggregator()
-        count = aggregator.run_aggregation()
-        logger.info(f"Background fetch completed: {count} articles")
+        aggregator = RealOnlyAggregator()
+        count = aggregator.run_real_only_aggregation()
+        logger.info(f"Background fetch completed: {count} real articles")
     
     background_tasks.add_task(fetch_task)
     return {"message": "Article fetching started in background"}
