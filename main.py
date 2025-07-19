@@ -148,16 +148,6 @@ async def debug_articles(db: Session = Depends(get_db)):
         ]
     }
 
-@app.get("/initialize-demo")
-async def initialize_demo_data(db: Session = Depends(get_db)):
-    """Initialize demo data for testing"""
-    from services.news_aggregator import NewsAggregator
-    
-    aggregator = NewsAggregator()
-    count = aggregator.create_demo_articles()
-    
-    return {"message": f"Created {count} demo articles successfully"}
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
