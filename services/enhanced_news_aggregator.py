@@ -96,9 +96,8 @@ class EnhancedNewsAggregator:
             
             # Parse RSS feed
             feed = feedparser.parse(source_config.url, 
-                                  request_headers=headers,
-                                  timeout=self.request_timeout)
-            
+                                  request_headers=headers)
+
             if feed.bozo and feed.bozo_exception:
                 logger.warning(f"RSS parsing warning for {source_config.name}: {feed.bozo_exception}")
             
@@ -129,7 +128,7 @@ class EnhancedNewsAggregator:
         articles = []
         
         try:
-            feed = feedparser.parse(source_config.url, timeout=self.request_timeout)
+            feed = feedparser.parse(source_config.url)
             
             for entry in feed.entries[:self.max_articles_per_source]:
                 try:
@@ -166,7 +165,7 @@ class EnhancedNewsAggregator:
         articles = []
         
         try:
-            feed = feedparser.parse(source_config.url, timeout=self.request_timeout)
+            feed = feedparser.parse(source_config.url)
             
             for entry in feed.entries[:self.max_articles_per_source]:
                 try:
