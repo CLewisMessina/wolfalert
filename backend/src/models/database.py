@@ -4,9 +4,10 @@ Single responsibility: Define all database table structures and relationships.
 """
 from datetime import datetime, timedelta
 from typing import List, Optional
+from decimal import Decimal as PythonDecimal
 from sqlalchemy import (
     Column, Integer, String, Text, Boolean, DateTime, 
-    Decimal, ForeignKey, Index, ARRAY
+    ForeignKey, Index, ARRAY, Numeric
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, Session
@@ -77,7 +78,7 @@ class ArticleInsight(Base):
     summary = Column(Text, nullable=False)
     impact_reasoning = Column(Text, nullable=False)  # "Why this matters to you"
     impact_type = Column(String(20), nullable=False)  # 'threat', 'opportunity', 'watch'
-    impact_score = Column(Decimal(3, 2), nullable=False)  # 0.00 to 1.00
+    impact_score = Column(Numeric(3, 2), nullable=False)  # 0.00 to 1.00
     processing_time_ms = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=func.now())
     
@@ -153,7 +154,7 @@ class RSSSource(Base):
     reliability = Column(String(20), nullable=False)  # 'high', 'medium', 'community'
     company = Column(String(100), nullable=True)
     industries = Column(ARRAY(String), nullable=False, default=[])
-    weight = Column(Decimal(3, 2), default=1.0)
+    weight = Column(Numeric(3, 2), default=1.0)
     is_active = Column(Boolean, default=True)
     last_fetched = Column(DateTime, nullable=True)
     fetch_frequency_hours = Column(Integer, default=4)
