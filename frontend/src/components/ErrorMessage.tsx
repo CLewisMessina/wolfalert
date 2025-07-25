@@ -46,4 +46,4 @@ export const ErrorMessage = ({
 }
 
 // Export default for compatibility
-export default LoadingSpinner
+export default ErrorMessage

@@ -1,6 +1,5 @@
 // components/LoadingSpinner.tsx
 'use client'
-
 import { clsx } from 'clsx'
 
 interface LoadingSpinnerProps {
@@ -9,7 +8,7 @@ interface LoadingSpinnerProps {
   className?: string
 }
 
-export const LoadingSpinner = ({ 
+const LoadingSpinner = ({ 
   size = 'medium', 
   message,
   className 
@@ -34,3 +33,5 @@ export const LoadingSpinner = ({
     </div>
   )
 }
+
+export default LoadingSpinner
