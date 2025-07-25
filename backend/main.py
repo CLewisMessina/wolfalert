@@ -6,9 +6,9 @@ Single responsibility: Configure and start the FastAPI application.
 import os
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 
 # Configure logging
 logging.basicConfig(
@@ -17,15 +17,42 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def run_migrations():
+    """Run Alembic migrations programmatically"""
+    try:
+        from alembic.config import Config
+        from alembic import command
+        
+        # Get the directory where this script is located
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        alembic_cfg = Config(os.path.join(script_dir, "alembic.ini"))
+        
+        # Set the script location to the alembic directory
+        alembic_cfg.set_main_option("script_location", os.path.join(script_dir, "alembic"))
+        
+        # Run migrations
+        command.upgrade(alembic_cfg, "head")
+        logger.info("Database migrations completed successfully")
+        
+    except Exception as e:
+        logger.error(f"Migration failed: {str(e)}")
+        raise
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan management"""
     # Startup
     logger.info("Starting WolfAlert backend...")
     
-    # TODO: Initialize database when database connection is ready
-    # TODO: Initialize Redis connection
-    # TODO: Start background tasks (RSS fetching, AI processing)
+    # Run database migrations on startup
+    if os.getenv("DATABASE_URL"):
+        try:
+            run_migrations()
+        except Exception as e:
+            logger.error(f"Failed to run migrations: {str(e)}")
+            # Don't fail startup for demo purposes, but log the error
+    else:
+        logger.warning("DATABASE_URL not found - skipping migrations")
     
     yield
     
@@ -52,11 +79,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Database dependency (will be used by API routes)
+def get_db():
+    """Get database session"""
+    try:
+        from src.core.database import DatabaseConfig
+        db_config = DatabaseConfig()
+        db = db_config.SessionLocal()
+        yield db
+    except Exception as e:
+        logger.error(f"Database connection failed: {str(e)}")
+        raise
+    finally:
+        db.close()
+
 # Health check endpoint (required by Railway)
 @app.get("/health")
 async def health_check():
     """Health check endpoint for deployment monitoring"""
-    return {"status": "healthy", "service": "wolfalert-backend"}
+    db_status = "connected" if os.getenv("DATABASE_URL") else "not configured"
+    return {
+        "status": "healthy", 
+        "service": "wolfalert-backend",
+        "database": db_status,
+        "version": "1.0.0"
+    }
 
 # Basic info endpoint
 @app.get("/")
@@ -65,10 +112,38 @@ async def root():
     return {
         "name": "WolfAlert API",
         "version": "1.0.0",
-        "status": "running"
+        "status": "running",
+        "database": "connected" if os.getenv("DATABASE_URL") else "not configured",
+        "docs": "/docs"
     }
 
-# TODO: Add API routes when database is ready
+# Database test endpoint
+@app.get("/api/test-db")
+async def test_database(db: Session = Depends(get_db)):
+    """Test database connection and tables"""
+    try:
+        from sqlalchemy import text
+        result = db.execute(text("SELECT 1"))
+        
+        # Test if our tables exist
+        table_check = db.execute(text("""
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name IN ('user_profiles', 'articles', 'rss_sources')
+        """))
+        tables = [row[0] for row in table_check.fetchall()]
+        
+        return {
+            "database": "connected",
+            "test_query": "success",
+            "tables_found": tables,
+            "tables_expected": ["user_profiles", "articles", "rss_sources"]
+        }
+    except Exception as e:
+        return {"database": "error", "message": str(e)}
+
+# TODO: Add API routes when ready
 # from src.api.profiles import router as profiles_router
 # from src.api.dashboard import router as dashboard_router
 # app.include_router(profiles_router, prefix="/api", tags=["profiles"])
