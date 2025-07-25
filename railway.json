@@ -1,8 +1,7 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "NIXPACKS",
-    "buildCommand": "cd backend && pip install -r requirements.txt && cd ../frontend && npm install && npm run build"
+    "builder": "NIXPACKS"
   },
   "deploy": {
     "startCommand": "cd backend && uvicorn src.main:app --host 0.0.0.0 --port $PORT",
@@ -10,62 +9,5 @@
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
-  },
-  "environments": {
-    "production": {
-      "variables": {
-        "NODE_ENV": "production",
-        "ENVIRONMENT": "production",
-        "API_HOST": "0.0.0.0",
-        "API_PORT": "$PORT",
-        "API_WORKERS": "2",
-        "LOG_LEVEL": "INFO",
-        "DEBUG": "false",
-        "RELOAD": "false"
-      }
-    },
-    "development": {
-      "variables": {
-        "NODE_ENV": "development", 
-        "ENVIRONMENT": "development",
-        "API_HOST": "0.0.0.0",
-        "API_PORT": "$PORT",
-        "API_WORKERS": "1",
-        "LOG_LEVEL": "DEBUG",
-        "DEBUG": "true",
-        "RELOAD": "true"
-      }
-    }
-  },
-  "services": [
-    {
-      "name": "wolfalert-backend",
-      "source": {
-        "type": "github",
-        "repo": "your-username/wolfalert",
-        "branch": "main"
-      },
-      "variables": {
-        "PORT": "8000"
-      }
-    },
-    {
-      "name": "wolfalert-postgres",
-      "source": {
-        "type": "postgresql",
-        "version": "15"
-      },
-      "variables": {
-        "POSTGRES_DB": "wolfalert",
-        "POSTGRES_USER": "wolfalert_user"
-      }
-    },
-    {
-      "name": "wolfalert-redis",
-      "source": {
-        "type": "redis",
-        "version": "7"
-      }
-    }
-  ]
+  }
 }
