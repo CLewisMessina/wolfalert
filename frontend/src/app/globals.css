@@ -1,0 +1,227 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom CSS Variables */
+:root {
+  --wolf-primary: #0f172a;
+  --wolf-accent: #6366f1;
+  --wolf-bg: #0f0f23;
+  --wolf-card: #1a1a2e;
+  --wolf-surface: #16213e;
+}
+
+/* Base Styles */
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+  
+  html {
+    @apply scroll-smooth;
+  }
+  
+  body {
+    @apply bg-wolf-bg text-white font-sans;
+  }
+  
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-wolf-primary;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-wolf-accent rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-purple-500;
+  }
+}
+
+/* Component Styles */
+@layer components {
+  /* Glass Morphism Effects */
+  .glass-morphism {
+    background: rgba(26, 26, 46, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .glass-morphism-light {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  /* Glow Effects */
+  .threat-glow {
+    box-shadow: 0 0 25px rgba(239, 68, 68, 0.3);
+  }
+  
+  .opportunity-glow {
+    box-shadow: 0 0 25px rgba(34, 197, 94, 0.3);
+  }
+  
+  .watch-glow {
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.3);
+  }
+  
+  .wolf-glow {
+    box-shadow: 0 0 25px rgba(99, 102, 241, 0.4);
+  }
+  
+  /* Button Styles */
+  .btn-primary {
+    @apply bg-gradient-to-r from-wolf-accent to-purple-600 text-white px-4 py-2 rounded-lg font-medium;
+    @apply hover:from-purple-600 hover:to-wolf-accent transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-wolf-accent focus:ring-offset-2 focus:ring-offset-wolf-bg;
+  }
+  
+  .btn-secondary {
+    @apply glass-morphism text-white px-4 py-2 rounded-lg font-medium;
+    @apply hover:bg-white/10 transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-wolf-bg;
+  }
+  
+  .btn-ghost {
+    @apply text-gray-400 px-4 py-2 rounded-lg font-medium;
+    @apply hover:text-gray-300 hover:bg-white/5 transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-wolf-bg;
+  }
+  
+  /* Card Styles */
+  .alert-card {
+    @apply glass-morphism rounded-xl p-6 hover:scale-[1.02] transition-all duration-300;
+  }
+  
+  .alert-card-primary {
+    @apply glass-morphism rounded-2xl p-8 hover:scale-[1.02] transition-all duration-300;
+  }
+  
+  /* Form Styles */
+  .form-input {
+    @apply glass-morphism px-4 py-2 rounded-lg text-white placeholder-gray-400;
+    @apply focus:outline-none focus:ring-2 focus:ring-wolf-accent focus:border-transparent;
+    @apply transition-all duration-200;
+  }
+  
+  .form-select {
+    @apply glass-morphism px-4 py-2 rounded-lg text-white;
+    @apply focus:outline-none focus:ring-2 focus:ring-wolf-accent focus:border-transparent;
+    @apply transition-all duration-200 appearance-none bg-transparent;
+  }
+  
+  /* Loading Animation */
+  .loading-spinner {
+    @apply animate-spin rounded-full h-6 w-6 border-b-2 border-wolf-accent;
+  }
+  
+  /* Impact Type Badges */
+  .badge-threat {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-bold;
+    @apply bg-red-500/20 text-red-300 border border-red-500/30;
+  }
+  
+  .badge-opportunity {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-bold;
+    @apply bg-green-500/20 text-green-300 border border-green-500/30;
+  }
+  
+  .badge-watch {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-bold;
+    @apply bg-blue-500/20 text-blue-300 border border-blue-500/30;
+  }
+}
+
+/* Utility Styles */
+@layer utilities {
+  /* Text Gradients */
+  .text-gradient {
+    @apply bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent;
+  }
+  
+  .text-accent-gradient {
+    @apply bg-gradient-to-r from-wolf-accent to-purple-400 bg-clip-text text-transparent;
+  }
+  
+  /* Animations */
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+  
+  /* Custom Keyframes */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideUp {
+    from {
+      transform: translateY(10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes glow {
+    from {
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+      transform: scale(1);
+    }
+    to {
+      box-shadow: 0 0 30px rgba(99, 102, 241, 0.6);
+      transform: scale(1.02);
+    }
+  }
+  
+  /* Responsive Design Helpers */
+  .container-wolf {
+    @apply max-w-7xl mx-auto px-6;
+  }
+  
+  /* Focus Styles */
+  .focus-wolf {
+    @apply focus:outline-none focus:ring-2 focus:ring-wolf-accent focus:ring-offset-2 focus:ring-offset-wolf-bg;
+  }
+}
+
+/* Dark Mode Overrides */
+.dark {
+  color-scheme: dark;
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    @apply bg-white text-black;
+  }
+  
+  .glass-morphism {
+    background: white;
+    border: 1px solid #e5e7eb;
+  }
+}
