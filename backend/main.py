@@ -143,11 +143,13 @@ async def test_database(db: Session = Depends(get_db)):
     except Exception as e:
         return {"database": "error", "message": str(e)}
 
-# TODO: Add API routes when ready
-# from src.api.profiles import router as profiles_router
-# from src.api.dashboard import router as dashboard_router
-# app.include_router(profiles_router, prefix="/api", tags=["profiles"])
-# app.include_router(dashboard_router, prefix="/api", tags=["dashboard"])
+# ✅ ENABLE API ROUTES - Previously commented out
+from src.api.profiles import router as profiles_router
+# from src.api.dashboard import router as dashboard_router  # TODO: Create dashboard routes
+
+# Include API routers
+app.include_router(profiles_router, prefix="/api", tags=["profiles"])
+# app.include_router(dashboard_router, prefix="/api", tags=["dashboard"])  # TODO: Enable when ready
 
 if __name__ == "__main__":
     import uvicorn
