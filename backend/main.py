@@ -1,4 +1,5 @@
 """
+backend\main.py
 FastAPI backend application entry point.
 Single responsibility: Configure and start the FastAPI application.
 """
@@ -69,7 +70,7 @@ app = FastAPI(
 )
 
 # Configure CORS
-cors_origins = os.getenv("CORS_ORIGINS", "https://wolfalert.app,https://dev.wolfalert.app").split(",")
+cors_origins = os.getenv("CORS_ORIGINS", "https://wolfalert.app,https://dev.wolfalert.app,http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
@@ -78,19 +79,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Database dependency (will be used by API routes)
-def get_db():
-    """Get database session"""
-    try:
-        from src.core.database import DatabaseConfig
-        db_config = DatabaseConfig()
-        db = db_config.SessionLocal()
-        yield db
-    except Exception as e:
-        logger.error(f"Database connection failed: {str(e)}")
-        raise
-    finally:
-        db.close()
+# ✅ USE PROPER DATABASE DEPENDENCY (import from core.database)
+from src.core.database import get_db
 
 # Health check endpoint (required by Railway)
 @app.get("/health")
@@ -142,7 +132,7 @@ async def test_database(db: Session = Depends(get_db)):
     except Exception as e:
         return {"database": "error", "message": str(e)}
 
-# ✅ ENABLE API ROUTES - Previously commented out
+# ✅ ENABLE API ROUTES - Fixed import
 from src.api.profiles import router as profiles_router
 # from src.api.dashboard import router as dashboard_router  # TODO: Create dashboard routes
 
