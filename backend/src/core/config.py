@@ -5,9 +5,9 @@ Single responsibility: Centralize all application configuration and settings.
 import os
 from typing import List, Optional
 from functools import lru_cache
-from pydantic import BaseSettings, validator
+from pydantic import BaseModel, field_validator
 
-class Settings(BaseSettings):
+class Settings(BaseModel):
     """Application settings from environment variables"""
     
     # Environment
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     api_workers: int = 1
     
     # Database
-    database_url: str
+    database_url: str = ""
     db_pool_size: int = 5
     db_max_overflow: int = 10
     db_pool_timeout: int = 30
@@ -34,10 +34,10 @@ class Settings(BaseSettings):
     redis_retry_on_timeout: bool = True
     
     # Security
-    jwt_secret_key: str
+    jwt_secret_key: str = "your-secret-key-here"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
-    session_secret_key: str
+    session_secret_key: str = "your-session-secret-here"
     session_expire_hours: int = 24
     
     # CORS
@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     cors_allow_credentials: bool = True
     
     # OpenAI
-    openai_api_key: str
+    openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
     openai_max_tokens: int = 2000
     openai_temperature: float = 0.3
@@ -86,14 +86,16 @@ class Settings(BaseSettings):
     enable_github_releases: bool = True
     source_reliability_threshold: str = "medium"
     
-    @validator('cors_origins', pre=True)
+    @field_validator('cors_origins', mode='before')
+    @classmethod
     def parse_cors_origins(cls, v):
         """Parse CORS origins from string or list"""
         if isinstance(v, str):
             return [origin.strip() for origin in v.split(',')]
         return v
     
-    @validator('environment')
+    @field_validator('environment')
+    @classmethod
     def validate_environment(cls, v):
         """Validate environment value"""
         valid_environments = ['development', 'staging', 'production']
@@ -101,7 +103,8 @@ class Settings(BaseSettings):
             raise ValueError(f'Environment must be one of: {valid_environments}')
         return v
     
-    @validator('log_level')
+    @field_validator('log_level')
+    @classmethod
     def validate_log_level(cls, v):
         """Validate log level"""
         valid_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
@@ -109,7 +112,8 @@ class Settings(BaseSettings):
             raise ValueError(f'Log level must be one of: {valid_levels}')
         return v.upper()
     
-    @validator('source_reliability_threshold')
+    @field_validator('source_reliability_threshold')
+    @classmethod
     def validate_reliability_threshold(cls, v):
         """Validate source reliability threshold"""
         valid_thresholds = ['high', 'medium', 'community']
@@ -117,64 +121,26 @@ class Settings(BaseSettings):
             raise ValueError(f'Reliability threshold must be one of: {valid_thresholds}')
         return v
     
-    class Config:
-        """Pydantic configuration"""
-        env_file = ".env"
-        case_sensitive = False
-        
-        # Example values for documentation
-        schema_extra = {
-            "example": {
-                "environment": "development",
-                "database_url": "postgresql://user:pass@localhost:5432/wolfalert",
-                "redis_url": "redis://localhost:6379/0",
-                "openai_api_key": "sk-your-openai-key-here",
-                "jwt_secret_key": "your-super-secret-jwt-key",
-                "session_secret_key": "your-session-secret-key"
-            }
-        }
-
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "case_sensitive": False,
+        "extra": "ignore"
+    }
 
 @lru_cache()
 def get_settings() -> Settings:
     """Get cached application settings"""
-    return Settings()
-
-
-# Configuration constants
-class Config:
-    """Static configuration constants"""
-    
-    # Application
-    APP_NAME = "WolfAlert"
-    APP_VERSION = "1.0.0"
-    APP_DESCRIPTION = "AI-powered intelligence dashboard for utility and technology professionals"
-    
-    # Database
-    DEFAULT_PAGE_SIZE = 20
-    MAX_PAGE_SIZE = 100
-    
-    # AI Processing
-    MIN_ARTICLE_LENGTH = 100  # Minimum characters for AI processing
-    MAX_ARTICLE_LENGTH = 50000  # Maximum characters to prevent token overflow
-    
-    # Cache Keys
-    CACHE_KEY_PREFIX = "wolfalert:"
-    DASHBOARD_CACHE_KEY = f"{CACHE_KEY_PREFIX}dashboard:"
-    ARTICLE_CACHE_KEY = f"{CACHE_KEY_PREFIX}article:"
-    PROFILE_CACHE_KEY = f"{CACHE_KEY_PREFIX}profile:"
-    
-    # Time Constants (in seconds)
-    CACHE_TTL_SHORT = 300  # 5 minutes
-    CACHE_TTL_MEDIUM = 3600  # 1 hour
-    CACHE_TTL_LONG = 86400  # 24 hours
-    
-    # Content Processing
-    RSS_USER_AGENT = f"{APP_NAME}/{APP_VERSION} (+https://wolfalert.app)"
-    REQUEST_TIMEOUT = 30
-    MAX_RETRIES = 3
-    
-    # Impact Score Ranges
-    IMPACT_SCORE_HIGH = 0.75
-    IMPACT_SCORE_MEDIUM = 0.50
-    IMPACT_SCORE_LOW = 0.25
+    # Load settings from environment variables
+    settings = Settings(
+        database_url=os.getenv("DATABASE_URL", ""),
+        redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+        openai_api_key=os.getenv("OPENAI_API_KEY", ""),
+        jwt_secret_key=os.getenv("JWT_SECRET_KEY", "your-secret-key-here"),
+        session_secret_key=os.getenv("SESSION_SECRET_KEY", "your-session-secret-here"),
+        environment=os.getenv("ENVIRONMENT", "development"),
+        debug=os.getenv("DEBUG", "true").lower() == "true",
+        log_level=os.getenv("LOG_LEVEL", "INFO"),
+        cors_origins=os.getenv("CORS_ORIGINS", "http://localhost:3000,https://wolfalert.app,https://dev.wolfalert.app")
+    )
+    return settings

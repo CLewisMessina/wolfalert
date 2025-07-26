@@ -22,6 +22,7 @@ openai==1.35.13
 
 # Data Processing
 pydantic==2.8.2
+pydantic-settings==2.3.4
 python-multipart==0.0.9
 
 # Utilities
