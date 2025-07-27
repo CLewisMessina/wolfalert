@@ -1,17 +1,21 @@
 """Alembic environment configuration for WolfAlert database migrations."""
 
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
 import os
 import sys
+import logging
 
-# Add the src directory to the path so we can import our models
+# Add the backend directory to the path so we can import our models and database config
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-# Import your models here
+# Import your models and database configuration
 from src.models.database import Base
+from src.core.database import db_config
+
+# Setup logging
+logger = logging.getLogger(__name__)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -26,7 +30,7 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 def get_database_url():
-    """Get database URL from environment variable or config."""
+    """Get database URL from environment variable or config (fallback only)."""
     # First try environment variable (Railway provides this)
     database_url = os.getenv("DATABASE_URL")
     
@@ -64,29 +68,32 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode.
-
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-    """
-    # Override the sqlalchemy.url in the config with our environment variable
-    config_dict = config.get_section(config.config_ini_section)
-    config_dict["sqlalchemy.url"] = get_database_url()
+    """Run migrations in 'online' mode using the existing database engine.
     
-    connectable = engine_from_config(
-        config_dict,
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
-
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection, 
-            target_metadata=target_metadata
-        )
-
-        with context.begin_transaction():
-            context.run_migrations()
+    This reuses the engine from database.py which has proven to work
+    with Railway's PostgreSQL service, avoiding connection pool issues.
+    """
+    logger.info("🔄 Starting online migrations using existing database engine...")
+    
+    try:
+        # Use the existing engine from database.py that already works
+        with db_config.engine.connect() as connection:
+            logger.info("✅ Database connection established for migrations")
+            
+            context.configure(
+                connection=connection,
+                target_metadata=target_metadata
+            )
+            logger.info("✅ Migration context configured")
+            
+            with context.begin_transaction():
+                logger.info("🚀 Beginning migration transaction...")
+                context.run_migrations()
+                logger.info("✅ Migrations executed successfully")
+                
+    except Exception as e:
+        logger.error(f"❌ Migration failed: {str(e)}")
+        raise
 
 
 if context.is_offline_mode():
