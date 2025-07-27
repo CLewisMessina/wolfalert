@@ -1,5 +1,5 @@
 """
-backend\main.py
+backend/main.py
 FastAPI backend application entry point.
 Single responsibility: Configure and start the FastAPI application.
 """
