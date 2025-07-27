@@ -1,3 +1,4 @@
+print("📜 Running migration: 001_initial_tables.py")
 """Initial tables creation
 
 Revision ID: 001_initial
