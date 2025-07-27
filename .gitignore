@@ -147,3 +147,7 @@ ui/
 # Cloud-specific ignores
 kubernetes-secrets/
 infrastructure/secrets/
+
+# repo consolidated files for LLMs
+repomix-output.md
+repomix-output.xml
