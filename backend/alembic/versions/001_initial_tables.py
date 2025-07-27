@@ -63,7 +63,7 @@ def upgrade() -> None:
     sa.Column('source_type', sa.String(length=30), nullable=False),
     sa.Column('reliability', sa.String(length=20), nullable=False),
     sa.Column('company', sa.String(length=100), nullable=True),
-    sa.Column('industries', postgresql.ARRAY(sa.String()), nullable=False),
+    sa.Column('industries', sa.JSON(), nullable=False),
     sa.Column('weight', sa.Numeric(precision=3, scale=2), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
     sa.Column('last_fetched', sa.DateTime(), nullable=True),
