@@ -1,4 +1,3 @@
-print("📜 Running migration: 001_initial_tables.py")
 """Initial tables creation
 
 Revision ID: 001_initial
@@ -8,7 +7,10 @@ Create Date: 2025-07-25 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-# from sqlalchemy.dialects import postgresql
+from sqlalchemy.dialects import postgresql
+import logging
+
+logger = logging.getLogger(__name__)
 
 # revision identifiers, used by Alembic.
 revision = '001_initial'
@@ -18,7 +20,10 @@ depends_on = None
 
 
 def upgrade() -> None:
+    logger.info("📜 Starting migration: 001_initial_tables.py")
+    
     # Create user_profiles table
+    logger.info("Creating user_profiles table...")
     op.create_table('user_profiles',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('profile_name', sa.String(length=100), nullable=False),
@@ -34,6 +39,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_user_profiles_id'), 'user_profiles', ['id'], unique=False)
 
     # Create articles table
+    logger.info("Creating articles table...")
     op.create_table('articles',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('url', sa.String(length=500), nullable=False),
@@ -55,7 +61,8 @@ def upgrade() -> None:
     op.create_index(op.f('ix_articles_id'), 'articles', ['id'], unique=False)
     op.create_index(op.f('ix_articles_url'), 'articles', ['url'], unique=False)
 
-    # Create rss_sources table
+    # Create rss_sources table - FIXED: Use ARRAY(String) to match database model
+    logger.info("Creating rss_sources table...")
     op.create_table('rss_sources',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
@@ -63,7 +70,7 @@ def upgrade() -> None:
     sa.Column('source_type', sa.String(length=30), nullable=False),
     sa.Column('reliability', sa.String(length=20), nullable=False),
     sa.Column('company', sa.String(length=100), nullable=True),
-    sa.Column('industries', sa.JSON(), nullable=False),
+    sa.Column('industries', postgresql.ARRAY(sa.String()), nullable=False),  # FIXED: Use ARRAY instead of JSON
     sa.Column('weight', sa.Numeric(precision=3, scale=2), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
     sa.Column('last_fetched', sa.DateTime(), nullable=True),
@@ -79,6 +86,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_rss_sources_id'), 'rss_sources', ['id'], unique=False)
 
     # Create article_insights table
+    logger.info("Creating article_insights table...")
     op.create_table('article_insights',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('article_id', sa.Integer(), nullable=False),
@@ -97,6 +105,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_article_insights_id'), 'article_insights', ['id'], unique=False)
 
     # Create reports table
+    logger.info("Creating reports table...")
     op.create_table('reports',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('profile_id', sa.Integer(), nullable=False),
@@ -112,6 +121,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_reports_id'), 'reports', ['id'], unique=False)
 
     # Create user_interactions table
+    logger.info("Creating user_interactions table...")
     op.create_table('user_interactions',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('profile_id', sa.Integer(), nullable=False),
@@ -125,13 +135,16 @@ def upgrade() -> None:
     op.create_index('idx_article_interactions', 'user_interactions', ['article_id', 'action'], unique=False)
     op.create_index('idx_profile_interactions', 'user_interactions', ['profile_id', 'interaction_time'], unique=False)
     op.create_index(op.f('ix_user_interactions_id'), 'user_interactions', ['id'], unique=False)
+    
+    logger.info("✅ All tables created successfully")
 
 
 def downgrade() -> None:
+    logger.info("📜 Rolling back migration: 001_initial_tables.py")
     op.drop_table('user_interactions')
     op.drop_table('reports')
     op.drop_table('article_insights')
     op.drop_table('rss_sources')
     op.drop_table('articles')
     op.drop_table('user_profiles')
-    print("✅ Alembic upgrade completed.")
+    logger.info("✅ All tables dropped successfully")
