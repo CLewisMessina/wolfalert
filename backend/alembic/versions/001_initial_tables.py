@@ -134,3 +134,4 @@ def downgrade() -> None:
     op.drop_table('rss_sources')
     op.drop_table('articles')
     op.drop_table('user_profiles')
+    print("✅ Alembic upgrade completed.")
