@@ -1,10 +1,12 @@
+# backend\main.py
 """
-backend/main.py
 FastAPI backend application entry point.
 Single responsibility: Configure and start the FastAPI application.
 """
 import os
 import logging
+import subprocess
+import traceback
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,46 +20,95 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def run_migrations():
-    """Run Alembic migrations programmatically"""
+    """Run Alembic migrations with timeout and enhanced error handling"""
     try:
-        from alembic.config import Config
-        from alembic import command
+        logger.info("🚀 Starting Alembic migrations...")
         
         # Get the directory where this script is located
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        alembic_cfg = Config(os.path.join(script_dir, "alembic.ini"))
         
-        # Set the script location to the alembic directory
-        alembic_cfg.set_main_option("script_location", os.path.join(script_dir, "alembic"))
+        # Option 1: Try programmatic approach with timeout detection
+        try:
+            from alembic.config import Config
+            from alembic import command
+            
+            alembic_cfg = Config(os.path.join(script_dir, "alembic.ini"))
+            alembic_cfg.set_main_option("script_location", os.path.join(script_dir, "alembic"))
+            
+            logger.info("📋 Running migrations programmatically...")
+            command.upgrade(alembic_cfg, "head")
+            logger.info("✅ Alembic migrations completed successfully (programmatic)")
+            return True
+            
+        except Exception as programmatic_error:
+            logger.warning(f"⚠️ Programmatic migration failed: {str(programmatic_error)}")
+            logger.info("🔄 Falling back to subprocess approach...")
+            
+            # Option 2: Subprocess with timeout as fallback
+            result = subprocess.run(
+                ["alembic", "upgrade", "head"],
+                cwd=script_dir,
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=30  # 30 second timeout
+            )
+            
+            if result.stdout:
+                logger.info(f"✅ Alembic output:\n{result.stdout}")
+            if result.stderr:
+                logger.warning(f"⚠️ Alembic warnings:\n{result.stderr}")
+            
+            logger.info("✅ Alembic migrations completed successfully (subprocess)")
+            return True
+            
+    except subprocess.TimeoutExpired:
+        logger.error("⏳ Alembic migration timed out after 30 seconds")
+        logger.error("💡 This suggests migrations are hanging - check database connectivity")
+        return False
         
-        # Run migrations
-        command.upgrade(alembic_cfg, "head")
-        logger.info("Database migrations completed successfully")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"❌ Alembic subprocess failed with exit code {e.returncode}")
+        if e.stdout:
+            logger.error(f"Stdout: {e.stdout}")
+        if e.stderr:
+            logger.error(f"Stderr: {e.stderr}")
+        return False
+        
+    except FileNotFoundError:
+        logger.error("❌ Alembic command not found - ensure alembic is installed")
+        return False
         
     except Exception as e:
-        logger.error(f"Migration failed: {str(e)}")
-        raise
+        logger.error(f"❌ Unexpected migration error: {str(e)}")
+        logger.error(f"Full traceback:\n{traceback.format_exc()}")
+        return False
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan management"""
     # Startup
-    logger.info("Starting WolfAlert backend...")
+    logger.info("🐺 Starting WolfAlert backend...")
     
     # Run database migrations on startup
     if os.getenv("DATABASE_URL"):
-        try:
-            run_migrations()
-        except Exception as e:
-            logger.error(f"Failed to run migrations: {str(e)}")
-            # Don't fail startup for demo purposes, but log the error
+        logger.info("🔗 DATABASE_URL found, running migrations...")
+        migration_success = run_migrations()
+        
+        if migration_success:
+            logger.info("✅ Migration phase completed successfully")
+        else:
+            logger.error("❌ Migration phase failed")
+            # Continue startup anyway for debugging purposes
+            logger.info("🔄 Continuing startup despite migration issues...")
     else:
-        logger.warning("DATABASE_URL not found - skipping migrations")
+        logger.warning("⚠️ DATABASE_URL not found - skipping migrations")
     
+    logger.info("🚀 Application startup completed")
     yield
     
     # Shutdown
-    logger.info("Shutting down WolfAlert backend...")
+    logger.info("🛑 Shutting down WolfAlert backend...")
 
 # Create FastAPI application
 app = FastAPI(
@@ -79,8 +130,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ USE PROPER DATABASE DEPENDENCY (import from core.database)
-from src.core.database import get_db
+# Import database dependency with error handling
+try:
+    from src.core.database import get_db
+    logger.info("✅ Database dependency imported successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to import database dependency: {str(e)}")
+    logger.error(f"Full traceback:\n{traceback.format_exc()}")
+    # Create a fallback dependency that returns an error
+    def get_db():
+        raise HTTPException(status_code=503, detail="Database not available")
 
 # Health check endpoint (required by Railway)
 @app.get("/health")
@@ -132,17 +191,28 @@ async def test_database(db: Session = Depends(get_db)):
     except Exception as e:
         return {"database": "error", "message": str(e)}
 
-# ✅ ENABLE API ROUTES - Fixed import
-from src.api.profiles import router as profiles_router
-# from src.api.dashboard import router as dashboard_router  # TODO: Create dashboard routes
+# Import and register profile routes with enhanced error handling
+try:
+    from src.api.profiles import router as profiles_router
+    app.include_router(profiles_router, prefix="/api", tags=["profiles"])
+    logger.info("✅ Profile routes registered successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to register profile routes: {str(e)}")
+    logger.error(f"Full traceback:\n{traceback.format_exc()}")
+    # Continue without profile routes for debugging
 
-# Include API routers
-app.include_router(profiles_router, prefix="/api", tags=["profiles"])
-# app.include_router(dashboard_router, prefix="/api", tags=["dashboard"])  # TODO: Enable when ready
+# TODO: Add dashboard routes when ready
+# try:
+#     from src.api.dashboard import router as dashboard_router
+#     app.include_router(dashboard_router, prefix="/api", tags=["dashboard"])
+#     logger.info("✅ Dashboard routes registered successfully")
+# except Exception as e:
+#     logger.error(f"❌ Failed to register dashboard routes: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", "8000"))
+    logger.info(f"🚀 Starting server on port {port}")
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
