@@ -8,7 +8,7 @@ import logging
 import subprocess
 import traceback
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
@@ -191,7 +191,7 @@ async def test_database(db: Session = Depends(get_db)):
     except Exception as e:
         return {"database": "error", "message": str(e)}
 
-# Import and register profile routes with enhanced error handling
+# ✅ FIXED: Import and register profile routes 
 try:
     from src.api.profiles import router as profiles_router
     app.include_router(profiles_router, prefix="/api", tags=["profiles"])

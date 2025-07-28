@@ -3,8 +3,11 @@ User profiles API routes.
 Single responsibility: Handle all profile-related HTTP endpoints.
 """
 import logging
+import traceback
+from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, validator
 
@@ -71,7 +74,7 @@ class ProfileUpdate(BaseModel):
 
 
 class ProfileResponse(BaseModel):
-    """Profile response model"""
+    """Profile response model - FIXED for datetime serialization"""
     id: int
     profile_name: str
     industry: str
@@ -79,11 +82,15 @@ class ProfileResponse(BaseModel):
     role_level: str
     user_session_id: Optional[str]
     is_active: bool
-    created_at: str
-    updated_at: str
+    created_at: datetime  # ✅ FIXED: Changed from str to datetime
+    updated_at: datetime  # ✅ FIXED: Changed from str to datetime
     
     class Config:
         from_attributes = True
+        # ✅ FIXED: Add proper JSON encoder for datetime objects
+        json_encoders = {
+            datetime: lambda v: v.isoformat() if v else None
+        }
 
 
 # API Routes
@@ -110,6 +117,7 @@ async def get_profiles(
         
     except Exception as e:
         logger.error(f"Error retrieving profiles: {str(e)}")
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve profiles"
@@ -135,12 +143,14 @@ async def get_profile(profile_id: int, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         logger.error(f"Error retrieving profile {profile_id}: {str(e)}")
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve profile"
         )
 
 
+# ✅ FIXED: Enhanced error handling and logging for the POST endpoint
 @router.post("/profiles", response_model=ProfileResponse, status_code=status.HTTP_201_CREATED)
 async def create_profile(
     profile_data: ProfileCreate,
@@ -149,6 +159,8 @@ async def create_profile(
 ):
     """Create a new user profile"""
     try:
+        logger.info(f"Creating profile: {profile_data.profile_name} for session: {session_id}")
+        
         # Check if profile with same name exists for this session
         existing_profile = db.query(UserProfile).filter(
             UserProfile.profile_name == profile_data.profile_name,
@@ -156,6 +168,7 @@ async def create_profile(
         ).first()
         
         if existing_profile:
+            logger.warning(f"Profile already exists: {profile_data.profile_name}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Profile with name '{profile_data.profile_name}' already exists"
@@ -170,21 +183,40 @@ async def create_profile(
             user_session_id=session_id
         )
         
+        logger.info(f"Adding profile to database...")
         db.add(profile)
         db.commit()
         db.refresh(profile)
         
-        logger.info(f"Created profile {profile.id}: {profile.profile_name}")
+        logger.info(f"✅ Created profile {profile.id}: {profile.profile_name}")
+        logger.info(f"Profile details: industry={profile.industry}, dept={profile.department}, role={profile.role_level}")
+        
+        # ✅ OPTION 1: Let Pydantic handle the serialization with our fixed model
         return profile
         
+        # ✅ OPTION 2: Use jsonable_encoder as backup (uncomment if Option 1 fails)
+        # return jsonable_encoder(profile)
+        
     except HTTPException:
+        # Re-raise HTTP exceptions (like 400 Bad Request)
         raise
     except Exception as e:
-        logger.error(f"Error creating profile: {str(e)}")
-        db.rollback()
+        logger.error(f"❌ CRITICAL ERROR creating profile: {str(e)}")
+        logger.error(f"Error type: {type(e).__name__}")
+        logger.error(f"Full traceback:\n{traceback.format_exc()}")
+        
+        # Always rollback on error
+        try:
+            db.rollback()
+            logger.info("Database transaction rolled back")
+        except Exception as rollback_error:
+            logger.error(f"Rollback failed: {rollback_error}")
+        
+        # Provide detailed error for debugging
+        error_details = f"Profile creation failed - {type(e).__name__}: {str(e)}"
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create profile"
+            detail=error_details
         )
 
 
@@ -221,6 +253,7 @@ async def update_profile(
         raise
     except Exception as e:
         logger.error(f"Error updating profile {profile_id}: {str(e)}")
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -250,6 +283,7 @@ async def delete_profile(profile_id: int, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         logger.error(f"Error deleting profile {profile_id}: {str(e)}")
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -287,6 +321,7 @@ async def get_profile_hash(profile_id: int, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         logger.error(f"Error getting profile hash for {profile_id}: {str(e)}")
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get profile hash"
