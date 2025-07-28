@@ -150,7 +150,7 @@ async def get_profile(profile_id: int, db: Session = Depends(get_db)):
         )
 
 
-# ✅ FIXED: Enhanced error handling and logging for the POST endpoint
+# ✅ FIXED: Global unique names validation and enhanced error handling
 @router.post("/profiles", response_model=ProfileResponse, status_code=status.HTTP_201_CREATED)
 async def create_profile(
     profile_data: ProfileCreate,
@@ -161,14 +161,14 @@ async def create_profile(
     try:
         logger.info(f"Creating profile: {profile_data.profile_name} for session: {session_id}")
         
-        # Check if profile with same name exists for this session
+        # ✅ FIXED: Check for global unique profile names (Option 1)
         existing_profile = db.query(UserProfile).filter(
             UserProfile.profile_name == profile_data.profile_name,
-            UserProfile.user_session_id == session_id
+            UserProfile.is_active == True  # Only check active profiles globally
         ).first()
         
         if existing_profile:
-            logger.warning(f"Profile already exists: {profile_data.profile_name}")
+            logger.warning(f"Profile name already exists globally: {profile_data.profile_name}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Profile with name '{profile_data.profile_name}' already exists"
@@ -191,11 +191,8 @@ async def create_profile(
         logger.info(f"✅ Created profile {profile.id}: {profile.profile_name}")
         logger.info(f"Profile details: industry={profile.industry}, dept={profile.department}, role={profile.role_level}")
         
-        # ✅ OPTION 1: Let Pydantic handle the serialization with our fixed model
+        # Return the profile - Pydantic handles serialization with our fixed model
         return profile
-        
-        # ✅ OPTION 2: Use jsonable_encoder as backup (uncomment if Option 1 fails)
-        # return jsonable_encoder(profile)
         
     except HTTPException:
         # Re-raise HTTP exceptions (like 400 Bad Request)
@@ -235,6 +232,20 @@ async def update_profile(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Profile with ID {profile_id} not found"
             )
+        
+        # Check for duplicate name if updating profile_name
+        if profile_data.profile_name is not None and profile_data.profile_name != profile.profile_name:
+            existing_profile = db.query(UserProfile).filter(
+                UserProfile.profile_name == profile_data.profile_name,
+                UserProfile.is_active == True,
+                UserProfile.id != profile_id  # Exclude current profile
+            ).first()
+            
+            if existing_profile:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Profile with name '{profile_data.profile_name}' already exists"
+                )
         
         # Update fields if provided
         if profile_data.profile_name is not None:
