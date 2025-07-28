@@ -91,7 +91,7 @@ function getApiBaseUrl(): string {
  * Validate required environment variables
  */
 function validateEnvironment(): void {
-  const required = [
+  const required: string[] = [
     // Add any required environment variables here
     // 'NEXT_PUBLIC_API_URL', // Optional with fallback
   ]
