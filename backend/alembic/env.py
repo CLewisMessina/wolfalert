@@ -40,9 +40,13 @@ def get_database_url():
         if database_url.startswith("postgres://"):
             database_url = database_url.replace("postgres://", "postgresql://", 1)
             logger.info("✅ Converted postgres:// to postgresql:// for migrations")
+        
+        # Add debug logging
+        logger.info(f"🔍 Database URL prefix: {database_url[:30]}...")
         return database_url
     
     # Fallback to config file setting
+    logger.warning("⚠️ DATABASE_URL not found in environment, falling back to alembic.ini")
     return config.get_main_option("sqlalchemy.url")
 
 def run_migrations_offline() -> None:
@@ -74,34 +78,54 @@ def run_migrations_online() -> None:
     In this scenario we need to create an Engine
     and associate a connection with the context.
     """
-    logger.info("🔄 Starting online migrations with simplified approach...")
+    logger.info("🔄 Starting online migrations...")
     
     # Override the sqlalchemy.url in the config with our environment variable
-    config_dict = config.get_section(config.config_ini_section)
-    config_dict["sqlalchemy.url"] = get_database_url()
+    database_url = get_database_url()
     
-    # Create engine with simplified configuration - avoid complex pooling during migrations
+    if not database_url:
+        raise ValueError("❌ DATABASE_URL is required for migrations")
+    
+    logger.info(f"🔗 Using database URL: {database_url[:30]}...")
+    
+    config_dict = config.get_section(config.config_ini_section) or {}
+    config_dict["sqlalchemy.url"] = database_url
+    
+    # Use QueuePool to match the main application configuration
+    # This ensures consistency between migrations and runtime
     connectable = engine_from_config(
         config_dict,
         prefix="sqlalchemy.",
-        poolclass=pool.StaticPool,  # Use StaticPool instead of NullPool for better Railway compatibility
-        pool_pre_ping=True,         # Verify connections before use
-        pool_recycle=300,          # Recycle connections every 5 minutes
+        poolclass=pool.QueuePool,  # Changed from StaticPool to QueuePool
+        pool_size=5,               # Match main app configuration
+        max_overflow=10,           # Match main app configuration
+        pool_timeout=30,           # Match main app configuration
+        pool_recycle=3600,         # Match main app configuration
+        pool_pre_ping=True,        # Verify connections before use
+        echo=True,                 # Enable SQL logging for debugging
         connect_args={
-            "connect_timeout": 10,  # 10 second connection timeout
+            "connect_timeout": 10,
             "options": "-c timezone=UTC"
         }
     )
     
-    logger.info("✅ Migration engine created with StaticPool")
+    logger.info("✅ Migration engine created with QueuePool")
 
     try:
         with connectable.connect() as connection:
             logger.info("✅ Database connection established for migrations")
             
+            # Log current database info
+            result = connection.execute("SELECT current_database(), current_user, version()")
+            db_info = result.fetchone()
+            logger.info(f"📊 Connected to: {db_info[0]} as {db_info[1]}")
+            logger.info(f"📊 PostgreSQL version: {db_info[2]}")
+            
             context.configure(
                 connection=connection, 
-                target_metadata=target_metadata
+                target_metadata=target_metadata,
+                compare_type=True,        # Detect column type changes
+                compare_server_default=True  # Detect default value changes
             )
             logger.info("✅ Migration context configured")
 
@@ -115,6 +139,8 @@ def run_migrations_online() -> None:
         import traceback
         logger.error(f"Full traceback: {traceback.format_exc()}")
         raise
+    finally:
+        logger.info("🏁 Migration process completed")
 
 
 if context.is_offline_mode():
