@@ -120,13 +120,19 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Configure CORS
-cors_origins = os.getenv("CORS_ORIGINS", "https://wolfalert.app,https://dev.wolfalert.app,http://localhost:3000").split(",")
+
+# Configure CORS - FIXED to properly read environment variable
+cors_origins_raw = os.getenv("CORS_ORIGINS", "https://wolfalert.app,https://dev.wolfalert.app,http://localhost:3000")
+cors_origins = [origin.strip() for origin in cors_origins_raw.split(",")]
+
+# Log CORS origins for debugging
+logger.info(f"🔧 CORS Origins configured: {cors_origins}")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Added OPTIONS for preflight
     allow_headers=["*"],
 )
 
