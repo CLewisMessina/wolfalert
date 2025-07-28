@@ -1,11 +1,25 @@
+// src/components/Header.tsx - UPDATED for Phase 2 Testing
+/**
+ * Header Component with Development Navigation
+ * Single Responsibility: Render the main application header with optional dev tools
+ * 
+ * This component:
+ * - Displays the WolfAlert logo and title
+ * - Shows profile selector (when profiles exist)
+ * - Provides action buttons
+ * - Includes dev navigation (development only)
+ */
+
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { UserProfile } from '@/types'
-import { ChevronDown, Plus, FileText } from 'lucide-react'
+import { ChevronDown, Plus, FileText, Wrench } from 'lucide-react'
+import { isFeatureEnabled } from '@/config/env'
 
 interface HeaderProps {
-  currentProfile: UserProfile
+  currentProfile?: UserProfile
   profiles?: UserProfile[]
   onProfileSelect?: (profile: UserProfile) => void
   onAddProfile?: () => void
@@ -14,7 +28,7 @@ interface HeaderProps {
 
 const Header = ({ 
   currentProfile, 
-  profiles = [currentProfile],
+  profiles = [],
   onProfileSelect,
   onAddProfile,
   onGenerateReport 
@@ -63,79 +77,97 @@ const Header = ({
         <div className="flex items-center justify-between">
           {/* Logo and Title */}
           <div className="flex items-center space-x-4">
-            <div className="relative">
-              <div className="w-10 h-10 bg-gradient-to-r from-wolf-accent to-purple-600 rounded-lg flex items-center justify-center animate-glow">
-                <span className="text-xl font-bold">🐺</span>
+            <Link href="/" className="flex items-center space-x-4">
+              <div className="relative">
+                <div className="w-10 h-10 bg-gradient-to-r from-wolf-accent to-purple-600 rounded-lg flex items-center justify-center animate-glow">
+                  <span className="text-xl font-bold">🐺</span>
+                </div>
               </div>
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gradient">WolfAlert</h1>
-              <p className="text-xs text-gray-400">AI Intelligence Dashboard</p>
-            </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gradient">WolfAlert</h1>
+                <p className="text-xs text-gray-400">AI Intelligence Dashboard</p>
+              </div>
+            </Link>
           </div>
           
-          {/* Profile Selector & Actions */}
+          {/* Main Navigation */}
           <div className="flex items-center space-x-4">
-            {/* Profile Selector */}
-            <div className="relative">
-              <button
-                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className="glass-morphism px-4 py-2 rounded-lg text-sm bg-transparent border-0 focus:ring-2 focus:ring-wolf-accent flex items-center space-x-2 hover:bg-white/10 transition-all duration-200"
-                aria-expanded={isProfileDropdownOpen}
-                aria-haspopup="true"
+            {/* Development Navigation (only in dev) */}
+            {isFeatureEnabled('enableDebugLogs') && (
+              <Link 
+                href="/api-test" 
+                className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/5"
+                title="API Testing (Dev Only)"
               >
-                <span className="text-white">{formatProfileDisplay(currentProfile)}</span>
-                <ChevronDown 
-                  className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
-                    isProfileDropdownOpen ? 'rotate-180' : ''
-                  }`} 
-                />
-              </button>
-              
-              {/* Dropdown Menu */}
-              {isProfileDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-72 glass-morphism rounded-lg shadow-xl border border-white/20 py-2 z-50">
-                  {profiles.map((profile) => (
-                    <button
-                      key={profile.id}
-                      onClick={() => handleProfileSelect(profile)}
-                      className={`w-full text-left px-4 py-3 text-sm hover:bg-white/10 transition-colors duration-200 ${
-                        profile.id === currentProfile.id ? 'bg-white/5 text-wolf-accent' : 'text-white'
-                      }`}
-                    >
-                      <div className="font-medium">{profile.profile_name}</div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        {formatProfileDisplay(profile)}
-                      </div>
-                    </button>
-                  ))}
-                  
-                  {/* Add Profile Option */}
-                  <div className="border-t border-white/10 mt-2 pt-2">
-                    <button
-                      onClick={() => {
-                        onAddProfile?.()
-                        setIsProfileDropdownOpen(false)
-                      }}
-                      className="w-full text-left px-4 py-3 text-sm text-wolf-accent hover:bg-white/10 transition-colors duration-200 flex items-center space-x-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Add New Profile</span>
-                    </button>
+                <Wrench className="w-4 h-4" />
+                <span className="hidden sm:inline">API Test</span>
+              </Link>
+            )}
+
+            {/* Profile Selector (if currentProfile exists) */}
+            {currentProfile && (
+              <div className="relative">
+                <button
+                  onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                  className="glass-morphism px-4 py-2 rounded-lg text-sm bg-transparent border-0 focus:ring-2 focus:ring-wolf-accent flex items-center space-x-2 hover:bg-white/10 transition-all duration-200"
+                  aria-expanded={isProfileDropdownOpen}
+                  aria-haspopup="true"
+                >
+                  <span className="text-white">{formatProfileDisplay(currentProfile)}</span>
+                  <ChevronDown 
+                    className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                      isProfileDropdownOpen ? 'rotate-180' : ''
+                    }`} 
+                  />
+                </button>
+                
+                {/* Dropdown Menu */}
+                {isProfileDropdownOpen && profiles.length > 0 && (
+                  <div className="absolute right-0 mt-2 w-72 glass-morphism rounded-lg shadow-xl border border-white/20 py-2 z-50">
+                    {profiles.map((profile) => (
+                      <button
+                        key={profile.id}
+                        onClick={() => handleProfileSelect(profile)}
+                        className={`w-full text-left px-4 py-3 text-sm hover:bg-white/10 transition-colors duration-200 ${
+                          profile.id === currentProfile.id ? 'bg-white/5 text-wolf-accent' : 'text-white'
+                        }`}
+                      >
+                        <div className="font-medium">{profile.profile_name}</div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          {formatProfileDisplay(profile)}
+                        </div>
+                      </button>
+                    ))}
+                    
+                    {/* Add Profile Option */}
+                    <div className="border-t border-white/10 mt-2 pt-2">
+                      <button
+                        onClick={() => {
+                          onAddProfile?.()
+                          setIsProfileDropdownOpen(false)
+                        }}
+                        className="w-full text-left px-4 py-3 text-sm text-wolf-accent hover:bg-white/10 transition-colors duration-200 flex items-center space-x-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add New Profile</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
             
-            {/* Generate Report Button */}
-            <button 
-              onClick={onGenerateReport}
-              className="btn-secondary flex items-center space-x-2"
-              title="Generate Intelligence Report"
-            >
-              <FileText className="w-4 h-4" />
-              <span className="hidden sm:inline">Generate Report</span>
-            </button>
+            {/* Action Buttons */}
+            {currentProfile && (
+              <button 
+                onClick={onGenerateReport}
+                className="btn-secondary flex items-center space-x-2"
+                title="Generate Intelligence Report"
+              >
+                <FileText className="w-4 h-4" />
+                <span className="hidden sm:inline">Generate Report</span>
+              </button>
+            )}
             
             {/* Add Profile Button */}
             <button 
